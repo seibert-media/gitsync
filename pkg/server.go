@@ -1,8 +1,11 @@
 package gitsync
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+
+	"github.com/gorilla/mux"
 
 	"github.com/seibert-media/gitsync/pkg/git"
 	"github.com/seibert-media/gitsync/pkg/handler"
@@ -46,13 +49,25 @@ func (s *Server) PrepareAndServe() error {
 		storer, fs, s.GitHost, s.GitRef, auth,
 	)
 
+	syncer := &handler.Syncer{
+		Git:  repository,
+		Hook: nil,
+	}
+
+	ctx := context.Background()
+	m := mux.NewRouter()
+	m.PathPrefix("/").HandlerFunc(withContext(ctx, syncer.ServeHTTP))
+
 	server := &http.Server{
-		Addr: fmt.Sprintf(":%d", s.Port),
-		Handler: &handler.Syncer{
-			Git:  repository,
-			Hook: nil,
-		},
+		Addr:    fmt.Sprintf(":%d", s.Port),
+		Handler: m,
 	}
 	s.Log.Info("listening", zap.Int("port", s.Port))
 	return server.ListenAndServe()
+}
+
+func withContext(ctx context.Context, handleFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		handleFunc(ctx, w, r)
+	}
 }

@@ -5,6 +5,7 @@
 package handler_test
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -23,6 +24,7 @@ var _ = Describe("gitsync", func() {
 		git    *mocks.Git
 		hook   *mocks.Hook
 		syncer *handler.Syncer
+		ctx    context.Context
 	)
 
 	BeforeEach(func() {
@@ -32,16 +34,17 @@ var _ = Describe("gitsync", func() {
 			Git:  git,
 			Hook: hook,
 		}
+		ctx = context.Background()
 	})
 
 	It("return status code 200", func() {
 		recorder := httptest.NewRecorder()
-		syncer.ServeHTTP(recorder, &http.Request{})
+		syncer.ServeHTTP(ctx, recorder, &http.Request{})
 		Expect(recorder.Result().StatusCode).To(Equal(http.StatusOK))
 	})
 	It("write empty json on success", func() {
 		recorder := httptest.NewRecorder()
-		syncer.ServeHTTP(recorder, &http.Request{})
+		syncer.ServeHTTP(ctx, recorder, &http.Request{})
 		content, _ := ioutil.ReadAll(recorder.Result().Body)
 		Expect(gbytes.BufferWithBytes(content)).To(gbytes.Say("{}"))
 	})

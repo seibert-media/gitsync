@@ -27,6 +27,6 @@ type Syncer struct {
 }
 
 // ServeHTTP provides a http handler and calls Hook after successfully running Git.Sync()
-func (i *Syncer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (i *Syncer) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "{}")
 }

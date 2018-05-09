@@ -21,6 +21,7 @@ import (
 
 	"github.com/seibert-media/gitsync/pkg/git"
 	"github.com/seibert-media/gitsync/pkg/handler"
+	"github.com/seibert-media/gitsync/pkg/hook"
 )
 
 // Server creates all required components and starts the http server
@@ -35,8 +36,9 @@ type Server struct {
 	Username   string
 	Password   string
 	PrivateKey string
+	Path       string
 
-	Path string
+	HookURL string
 }
 
 // Prepare the server
@@ -64,7 +66,7 @@ func (s *Server) Prepare() error {
 
 	syncer := &handler.Syncer{
 		Git:  repository,
-		Hook: nil,
+		Hook: hook.New(s.HookURL),
 	}
 
 	ctx := context.Background()

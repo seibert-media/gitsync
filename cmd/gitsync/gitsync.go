@@ -70,5 +70,14 @@ func do(log *log.Logger) error {
 	srv := gitsync.Server{
 		Port: *port,
 	}
-	return srv.PrepareAndServe()
+	err := srv.Prepare()
+	if err != nil {
+		log.Error("preparing gitsync", zap.Error(err))
+		return err
+	}
+	err = srv.Serve()
+	if err != nil {
+		log.Error("serving gitsync", zap.Error(err))
+	}
+	return err
 }

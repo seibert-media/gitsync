@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gorilla/mux"
-
-	"github.com/seibert-media/gitsync/pkg/git"
-	"github.com/seibert-media/gitsync/pkg/handler"
-
 	"github.com/playnet-public/libs/log"
 	"go.uber.org/zap"
 	"gopkg.in/src-d/go-billy.v4/osfs"
@@ -17,10 +17,15 @@ import (
 	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 	"gopkg.in/src-d/go-git.v4/storage/filesystem"
+
+	"github.com/seibert-media/gitsync/pkg/git"
+	"github.com/seibert-media/gitsync/pkg/handler"
 )
 
 // Server creates all required components and starts the http server
 type Server struct {
+	*http.Server
+
 	Log  *log.Logger
 	Port int
 
@@ -33,8 +38,8 @@ type Server struct {
 	Path string
 }
 
-// PrepareAndServe the handler
-func (s *Server) PrepareAndServe() error {
+// Prepare the server
+func (s *Server) Prepare() error {
 	fs := osfs.New(s.Path)
 	storer, _ := filesystem.NewStorage(fs)
 
@@ -58,16 +63,43 @@ func (s *Server) PrepareAndServe() error {
 	m := mux.NewRouter()
 	m.PathPrefix("/").HandlerFunc(withContext(ctx, syncer.ServeHTTP))
 
-	server := &http.Server{
+	s.Server = &http.Server{
 		Addr:    fmt.Sprintf(":%d", s.Port),
 		Handler: m,
 	}
-	s.Log.Info("listening", zap.Int("port", s.Port))
-	return server.ListenAndServe()
+
+	return nil
 }
 
 func withContext(ctx context.Context, handleFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		handleFunc(ctx, w, r)
 	}
+}
+
+// Serve via http
+func (s *Server) Serve() error {
+	go func() {
+		s.Log.Info("listening", zap.Int("port", s.Port))
+		if err := s.ListenAndServe(); err != http.ErrServerClosed {
+			s.Log.Fatal("fatal server error", zap.Error(err))
+		}
+	}()
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	<-stop
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	s.Log.Info("graceful shutdown", zap.Duration("timeout", 1*time.Second))
+
+	if err := s.Shutdown(ctx); err != nil {
+		s.Log.Error("graceful shutdown", zap.Error(err))
+		return err
+	}
+
+	s.Log.Info("stopped listening")
+	return nil
 }

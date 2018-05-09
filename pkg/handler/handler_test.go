@@ -11,15 +11,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/seibert-media/gitsync/pkg/handler"
-	"github.com/seibert-media/gitsync/pkg/mocks"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
+
+	"github.com/seibert-media/gitsync/pkg/handler"
+	"github.com/seibert-media/gitsync/pkg/mocks"
 )
 
-var _ = Describe("gitsync", func() {
+var _ = Describe("handler", func() {
 	var (
 		git    *mocks.Git
 		hook   *mocks.Hook
@@ -37,16 +37,18 @@ var _ = Describe("gitsync", func() {
 		ctx = context.Background()
 	})
 
-	It("return status code 200", func() {
-		recorder := httptest.NewRecorder()
-		syncer.ServeHTTP(ctx, recorder, &http.Request{})
-		Expect(recorder.Result().StatusCode).To(Equal(http.StatusOK))
-	})
-	It("write empty json on success", func() {
-		recorder := httptest.NewRecorder()
-		syncer.ServeHTTP(ctx, recorder, &http.Request{})
-		content, _ := ioutil.ReadAll(recorder.Result().Body)
-		Expect(gbytes.BufferWithBytes(content)).To(gbytes.Say("{}"))
+	Describe("ServeHTTP", func() {
+		It("return status code 200", func() {
+			recorder := httptest.NewRecorder()
+			syncer.ServeHTTP(ctx, recorder, &http.Request{})
+			Expect(recorder.Result().StatusCode).To(Equal(http.StatusOK))
+		})
+		It("write empty json on success", func() {
+			recorder := httptest.NewRecorder()
+			syncer.ServeHTTP(ctx, recorder, &http.Request{})
+			content, _ := ioutil.ReadAll(recorder.Result().Body)
+			Expect(gbytes.BufferWithBytes(content)).To(gbytes.Say("{}"))
+		})
 	})
 })
 

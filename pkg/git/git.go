@@ -3,14 +3,11 @@ package git
 import (
 	"context"
 
-	"gopkg.in/src-d/go-git.v4/storage"
-
-	"gopkg.in/src-d/go-git.v4/plumbing"
-
-	"gopkg.in/src-d/go-git.v4/plumbing/transport"
-
 	"gopkg.in/src-d/go-billy.v4"
 	"gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/plumbing"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport"
+	"gopkg.in/src-d/go-git.v4/storage"
 )
 
 // Repository is responsible for fetching a git repository using go-git and then keeping it in sync when triggered

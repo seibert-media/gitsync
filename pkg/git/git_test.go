@@ -58,5 +58,5 @@ var _ = Describe("git", func() {
 
 func TestGitSync(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "GitSync Test Suite")
+	RunSpecs(t, "Git Test Suite")
 }

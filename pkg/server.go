@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 	"github.com/playnet-public/libs/log"
 	"go.uber.org/zap"
 	"gopkg.in/src-d/go-billy.v4/osfs"
@@ -41,18 +42,25 @@ type Server struct {
 // Prepare the server
 func (s *Server) Prepare() error {
 	fs := osfs.New(s.Path)
-	storer, _ := filesystem.NewStorage(fs)
+	storer, err := filesystem.NewStorage(fs)
+	if err != nil {
+		return errors.Wrap(err, "create filesystem")
+	}
 
 	var auth transport.AuthMethod
 	if s.PrivateKey != "" {
-		auth, _ = ssh.NewPublicKeysFromFile(s.Username, s.PrivateKey, s.Password)
+		auth, err = ssh.NewPublicKeysFromFile(s.Username, s.PrivateKey, s.Password)
+		if err != nil {
+			return errors.Wrap(err, "create public key")
+		}
 	} else {
 		auth = &githttp.BasicAuth{Username: s.Username, Password: s.Password}
 	}
 
-	repository, _ := git.New(
-		storer, fs, s.GitHost, s.GitRef, auth,
-	)
+	repository, err := git.New(storer, fs, s.GitHost, s.GitRef, auth)
+	if err != nil {
+		return errors.Wrap(err, "initialize git")
+	}
 
 	syncer := &handler.Syncer{
 		Git:  repository,
@@ -61,7 +69,7 @@ func (s *Server) Prepare() error {
 
 	ctx := context.Background()
 	m := mux.NewRouter()
-	m.PathPrefix("/").HandlerFunc(withContext(ctx, syncer.ServeHTTP))
+	m.PathPrefix("/").HandlerFunc(WithContext(ctx, syncer.ServeHTTP))
 
 	s.Server = &http.Server{
 		Addr:    fmt.Sprintf(":%d", s.Port),
@@ -71,7 +79,8 @@ func (s *Server) Prepare() error {
 	return nil
 }
 
-func withContext(ctx context.Context, handleFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
+// WithContext wraps contextual handleFuncs into default ones for use with mux
+func WithContext(ctx context.Context, handleFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		handleFunc(ctx, w, r)
 	}

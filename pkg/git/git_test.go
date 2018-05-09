@@ -8,25 +8,23 @@ import (
 	"context"
 	"testing"
 
-	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
-
-	"gopkg.in/src-d/go-git.v4/plumbing/transport"
+	"github.com/seibert-media/gitsync/pkg/git"
 
 	"gopkg.in/src-d/go-billy.v4"
-
 	"gopkg.in/src-d/go-billy.v4/memfs"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
+	"gopkg.in/src-d/go-git.v4/storage/memory"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/seibert-media/gitsync/pkg/git"
-	"gopkg.in/src-d/go-git.v4/storage/memory"
 )
 
 var _ = Describe("git", func() {
 	var (
 		fs     billy.Filesystem
 		storer *memory.Storage
-		s      *git.Syncer
+		s      *git.Repository
 		ctx    context.Context
 		auth   transport.AuthMethod
 	)
@@ -50,10 +48,10 @@ var _ = Describe("git", func() {
 		})
 	})
 
-	Describe("Run", func() {
+	Describe("Sync", func() {
 		It("does return error on failed pull", func() {
 			ctx = nil
-			Expect(s.Run(ctx)).NotTo(BeNil())
+			Expect(s.Sync(ctx)).NotTo(BeNil())
 		})
 	})
 })

@@ -5,18 +5,19 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 )
 
-//go:generate counterfeiter -o mocks/git.go --fake-name Git . git
+//go:generate counterfeiter -o ../mocks/git.go --fake-name Git . git
 type git interface {
-	Sync() error
+	Sync(context.Context) error
 }
 
-//go:generate counterfeiter -o mocks/hook.go --fake-name Hook . hook
+//go:generate counterfeiter -o ../mocks/hook.go --fake-name Hook . hook
 type hook interface {
-	Call() error
+	Call(context.Context) error
 }
 
 // Syncer stores the required links for serving gitsync

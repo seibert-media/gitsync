@@ -3,37 +3,38 @@ package git
 import (
 	"context"
 
+	"gopkg.in/src-d/go-git.v4/storage"
+
 	"gopkg.in/src-d/go-git.v4/plumbing"
 
 	"gopkg.in/src-d/go-git.v4/plumbing/transport"
 
 	"gopkg.in/src-d/go-billy.v4"
 	"gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/storage/memory"
 )
 
-// Syncer is responsible for fetching a git repository using go-git and then keeping it in sync when triggered
-type Syncer struct {
-	Repository *git.Repository
+// Repository is responsible for fetching a git repository using go-git and then keeping it in sync when triggered
+type Repository struct {
+	*git.Repository
 }
 
-// New Syncer
+// New Repository
 func New(
-	storer *memory.Storage, fs billy.Filesystem,
+	storer storage.Storer, fs billy.Filesystem,
 	url string, ref string, auth transport.AuthMethod,
-) (*Syncer, error) {
+) (*Repository, error) {
 	repo, err := git.Clone(storer, fs, &git.CloneOptions{
 		URL:           url,
 		Auth:          auth,
 		ReferenceName: plumbing.ReferenceName(ref),
 	})
-	return &Syncer{
+	return &Repository{
 		Repository: repo,
 	}, err
 }
 
-// Run sync to pull all recent changes for repository
-func (s *Syncer) Run(ctx context.Context) error {
+// Sync pulls all recent changes from the remote repository
+func (s *Repository) Sync(ctx context.Context) error {
 	tree, _ := s.Repository.Worktree()
 	err := tree.PullContext(ctx, &git.PullOptions{})
 	return err

@@ -2,14 +2,17 @@
 package mocks
 
 import (
+	"context"
 	"sync"
 )
 
 type Hook struct {
-	CallStub        func() error
+	CallStub        func(context.Context) error
 	callMutex       sync.RWMutex
-	callArgsForCall []struct{}
-	callReturns     struct {
+	callArgsForCall []struct {
+		arg1 context.Context
+	}
+	callReturns struct {
 		result1 error
 	}
 	callReturnsOnCall map[int]struct {
@@ -19,14 +22,16 @@ type Hook struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *Hook) Call() error {
+func (fake *Hook) Call(arg1 context.Context) error {
 	fake.callMutex.Lock()
 	ret, specificReturn := fake.callReturnsOnCall[len(fake.callArgsForCall)]
-	fake.callArgsForCall = append(fake.callArgsForCall, struct{}{})
-	fake.recordInvocation("Call", []interface{}{})
+	fake.callArgsForCall = append(fake.callArgsForCall, struct {
+		arg1 context.Context
+	}{arg1})
+	fake.recordInvocation("Call", []interface{}{arg1})
 	fake.callMutex.Unlock()
 	if fake.CallStub != nil {
-		return fake.CallStub()
+		return fake.CallStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -38,6 +43,12 @@ func (fake *Hook) CallCallCount() int {
 	fake.callMutex.RLock()
 	defer fake.callMutex.RUnlock()
 	return len(fake.callArgsForCall)
+}
+
+func (fake *Hook) CallArgsForCall(i int) context.Context {
+	fake.callMutex.RLock()
+	defer fake.callMutex.RUnlock()
+	return fake.callArgsForCall[i].arg1
 }
 
 func (fake *Hook) CallReturns(result1 error) {
